@@ -13,11 +13,11 @@ class CorePrincipal(
     authorities: Collection<GrantedAuthority>
 ) : JwtAuthenticationToken(jwt, authorities) {
 
-    private val username: String = jwt.getClaimAsString(USERNAME)
-    private val type: String = username.split("@")[1].split(".")[0]
-    private val assets: Set<String> = jwt.getClaimAsString(FINT_ASSET_IDS).split(",").toSet()
-    private val scopes: Set<String> = jwt.getClaimAsStringList(SCOPE).toSet()
-    private val roles: Set<String> = jwt.getClaimAsStringList(ROLES).toSet()
+    val username: String = jwt.getClaimAsString(USERNAME)
+    val type: String = username.split("@")[1].split(".")[0]
+    val assets: Set<String> = jwt.getClaimAsString(FINT_ASSET_IDS).split(",").toSet()
+    val scopes: Set<String> = jwt.getClaimAsStringList(SCOPE).toSet()
+    val roles: Set<String> = jwt.getClaimAsStringList(ROLES).toSet()
 
     fun matchesUsername(expected: String) = username == expected
     fun matchesType(expected: String) = type == expected
