@@ -31,9 +31,34 @@ class CorePrincipal(
      */
     val assets: Set<String> = jwt.getClaimAsString(FINT_ASSET_IDS).split(",").toSet()
 
+    /**
+     * The username of the principal.
+     *
+     * This field is the name of the client or adapter registered in Kundeportalen.
+     */
     val username: String = jwt.getClaimAsString(USERNAME)
+
+    /**
+     * The type of the principal.
+     *
+     * This field indicates whether the principal is a FINT client or a FINT adapter.
+     */
     val type: String = username.split("@")[1].split(".")[0]
+
+    /**
+     * A set of scopes.
+     *
+     * This field represents a list of all the scopes. These scopes should correspond to either
+     * "fint-adapter" or "fint-client", in accordance with the type of the principal.
+     */
     val scopes: Set<String> = jwt.getClaimAsStringList(SCOPE).toSet()
+
+    /**
+     * A set of roles.
+     *
+     * This field represents a list of all the roles. These roles determine what data the principal
+     * can fetch or deliver, and they vary depending on the type of the principal.
+     */
     val roles: Set<String> = jwt.getClaimAsStringList(ROLES).toSet()
 
     fun matchesUsername(expected: String) = username == expected
