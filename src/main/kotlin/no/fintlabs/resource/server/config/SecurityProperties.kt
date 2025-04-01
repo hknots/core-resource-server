@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration
 @ConfigurationProperties("fint.security")
 class SecurityProperties {
 
-    val enabled: Boolean = true
-    val issuerUri: String = "https://idp.felleskomponent.no/nidp/oauth/nam"
+    var enabled: Boolean = true
+    var issuerUri: String = "https://idp.felleskomponent.no/nidp/oauth/nam"
 
 }
