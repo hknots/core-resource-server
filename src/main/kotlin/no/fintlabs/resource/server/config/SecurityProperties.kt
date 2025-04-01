@@ -8,5 +8,6 @@ import org.springframework.context.annotation.Configuration
 class SecurityProperties {
 
     val enabled: Boolean = true
+    val issuerUri: String = "https://idp.felleskomponent.no/nidp/oauth/nam"
 
 }
