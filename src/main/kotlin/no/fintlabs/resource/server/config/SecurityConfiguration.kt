@@ -1,6 +1,5 @@
-package no.fintlabs.resource.server.security
+package no.fintlabs.resource.server.config
 
-import no.fintlabs.resource.server.config.SecurityProperties
 import no.fintlabs.resource.server.converter.CorePrincipalConverter
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
