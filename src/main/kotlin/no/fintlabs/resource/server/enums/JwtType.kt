@@ -1,4 +1,4 @@
-package no.fintlabs.resource.server
+package no.fintlabs.resource.server.enums
 
 enum class JwtType {
     DEFAULT,
