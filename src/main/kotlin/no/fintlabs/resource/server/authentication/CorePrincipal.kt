@@ -15,14 +15,6 @@ class CorePrincipal(
 ) : JwtAuthenticationToken(jwt, authorities) {
 
     /**
-     * The asset name of the organization.
-     *
-     * This field represents the organization name and is formatted using a hyphen ("-")
-     * instead of a dot ("."). For example, "fintlabs.no" is represented as "fintlabs-no".
-     */
-    val assetName: String = jwt.getClaimAsString(FINT_ASSET_NAME)
-
-    /**
      * A set of assets.
      *
      * This field represents all the organizations and sub-organizations that the principal is part of.
@@ -30,6 +22,14 @@ class CorePrincipal(
      * if an asset were formatted as "fintlabs-no" elsewhere, here it would be represented as "fintlabs.no".
      */
     val assets: Set<String> = jwt.getClaimAsString(FINT_ASSET_IDS).split(",").toSet()
+
+    /**
+     * The organization name.
+     *
+     * This field represents the organization name and is formatted using a hyphen ("-")
+     * instead of a dot ("."). For example, "fintlabs.no" is represented as "fintlabs-no".
+     */
+    val orgId: String = assets.first().replace("-", ".")
 
     /**
      * The username of the principal.
