@@ -1,6 +1,7 @@
 package no.fintlabs.resource.server.authentication
 
 import no.fintlabs.resource.server.JwtClaimsConstants.FINT_ASSET_IDS
+import no.fintlabs.resource.server.JwtClaimsConstants.FINT_ASSET_NAME
 import no.fintlabs.resource.server.JwtClaimsConstants.ROLES
 import no.fintlabs.resource.server.JwtClaimsConstants.SCOPE
 import no.fintlabs.resource.server.JwtClaimsConstants.USERNAME
@@ -13,9 +14,17 @@ class CorePrincipal(
     authorities: Collection<GrantedAuthority>
 ) : JwtAuthenticationToken(jwt, authorities) {
 
+    /**
+     * The asset name of the organization.
+     *
+     * This field represents the organization name and is formatted using a hyphen ("-")
+     * instead of a dot ("."). For example, "fintlabs.no" is represented as "fintlabs-no".
+     */
+    val assetName: String = jwt.getClaimAsString(FINT_ASSET_NAME)
+
+    val assets: Set<String> = jwt.getClaimAsString(FINT_ASSET_IDS).split(",").toSet()
     val username: String = jwt.getClaimAsString(USERNAME)
     val type: String = username.split("@")[1].split(".")[0]
-    val assets: Set<String> = jwt.getClaimAsString(FINT_ASSET_IDS).split(",").toSet()
     val scopes: Set<String> = jwt.getClaimAsStringList(SCOPE).toSet()
     val roles: Set<String> = jwt.getClaimAsStringList(ROLES).toSet()
 
