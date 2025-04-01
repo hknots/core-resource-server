@@ -22,7 +22,15 @@ class CorePrincipal(
      */
     val assetName: String = jwt.getClaimAsString(FINT_ASSET_NAME)
 
+    /**
+     * A set of assets.
+     *
+     * This field represents all the organizations and sub-organizations that the principal is part of.
+     * Each asset is formatted using a dot (".") instead of a hyphen ("-"). For instance,
+     * if an asset were formatted as "fintlabs-no" elsewhere, here it would be represented as "fintlabs.no".
+     */
     val assets: Set<String> = jwt.getClaimAsString(FINT_ASSET_IDS).split(",").toSet()
+
     val username: String = jwt.getClaimAsString(USERNAME)
     val type: String = username.split("@")[1].split(".")[0]
     val scopes: Set<String> = jwt.getClaimAsStringList(SCOPE).toSet()
