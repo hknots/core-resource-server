@@ -1,8 +1,8 @@
 package no.fintlabs.resource.server.config
 
-import kotlinx.coroutines.reactor.awaitSingle
 import no.fintlabs.resource.server.authentication.CorePrincipal
 import no.fintlabs.resource.server.converter.CorePrincipalConverter
+import no.fintlabs.resource.server.enums.FintType
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authorization.AuthorizationDecision
@@ -21,14 +21,12 @@ class SecurityConfiguration(
 ) {
 
     @Bean
-    fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
-        return if (securityProperties.enabled) fintSecurity(http)
-        else permitAll(http)
-    }
+    fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
+        if (securityProperties.enabled) fintSecurity(http) else permitAll(http)
 
     private fun fintSecurity(http: ServerHttpSecurity): SecurityWebFilterChain =
         http.authorizeExchange { exchanges ->
-            exchanges.anyExchange().access(this::test)
+            exchanges.anyExchange().access(::authorizeCorePrincipal)
         }.oauth2ResourceServer { oauth2 ->
             oauth2.jwt { jwt ->
                 jwt.jwtAuthenticationConverter(
@@ -37,17 +35,28 @@ class SecurityConfiguration(
             }
         }.build()
 
-    private suspend fun test(
+    private fun authorizeCorePrincipal(
         monoAuthentication: Mono<Authentication>,
         authorizationContext: AuthorizationContext
-    ): AuthorizationDecision {
-        val authentication = monoAuthentication.awaitSingle()
-
-        if (authentication is CorePrincipal && co) {
-
+    ): Mono<AuthorizationDecision> =
+        monoAuthentication.map { authentication ->
+            if (authentication is CorePrincipal) AuthorizationDecision(authorizedCorePrincipal(authentication))
+            else AuthorizationDecision(true)
         }
 
-        return AuthorizationDecision(true)
+    private fun authorizedCorePrincipal(corePrincipal: CorePrincipal): Boolean {
+        val typeMatches = securityProperties.requiredFintType?.let { requiredType ->
+            when (requiredType) {
+                FintType.CLIENT -> corePrincipal.isClient()
+                FintType.ADAPTER -> corePrincipal.isAdapter()
+            }
+        } ?: true
+
+        val scopeMatches = securityProperties.requiredScopes?.any { requiredScope ->
+            corePrincipal.scopes.contains(requiredScope.formattedValue)
+        } ?: true
+
+        return typeMatches && scopeMatches
     }
 
     private fun permitAll(http: ServerHttpSecurity): SecurityWebFilterChain =
