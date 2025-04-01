@@ -73,5 +73,13 @@ class CorePrincipal(
 
     fun hasAdapterScope() = scopes.contains("fint-adapter")
     fun hasClientScope() = scopes.contains("fint-client")
+    fun hasRole(role: String) = roles.contains(role)
+
+    fun hasRole(domainName: String, packageName: String): Boolean {
+        return containsRole(formatRole(domainName, packageName))
+    }
+
+    private fun formatRole(domainName: String, packageName: String) =
+        "FINT_${type.replaceFirstChar { it.uppercase() }}_${domainName.lowercase()}_${packageName.lowercase()}"
 
 }
