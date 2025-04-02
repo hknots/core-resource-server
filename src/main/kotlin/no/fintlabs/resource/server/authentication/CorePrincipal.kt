@@ -1,7 +1,6 @@
 package no.fintlabs.resource.server.authentication
 
 import no.fintlabs.resource.server.JwtClaimsConstants.FINT_ASSET_IDS
-import no.fintlabs.resource.server.JwtClaimsConstants.FINT_ASSET_NAME
 import no.fintlabs.resource.server.JwtClaimsConstants.ROLES
 import no.fintlabs.resource.server.JwtClaimsConstants.SCOPE
 import no.fintlabs.resource.server.JwtClaimsConstants.USERNAME
@@ -75,9 +74,8 @@ class CorePrincipal(
     fun hasClientScope() = scopes.contains("fint-client")
     fun hasRole(role: String) = roles.contains(role)
 
-    fun hasRole(domainName: String, packageName: String): Boolean {
-        return containsRole(formatRole(domainName, packageName))
-    }
+    fun hasRole(domainName: String, packageName: String): Boolean =
+        containsRole(formatRole(domainName, packageName))
 
     private fun formatRole(domainName: String, packageName: String) =
         "FINT_${type.replaceFirstChar { it.uppercase() }}_${domainName.lowercase()}_${packageName.lowercase()}"
