@@ -3,9 +3,11 @@ plugins {
 	kotlin("plugin.spring") version "1.9.25"
 	id("org.springframework.boot") version "3.4.4"
 	id("io.spring.dependency-management") version "1.1.7"
+	`java-library`
+	`maven-publish`
 }
 
-group = "no.fintlabs.resource.server"
+group = "no.fintlabs"
 version = "0.0.1-SNAPSHOT"
 
 java {
@@ -15,10 +17,12 @@ java {
 }
 
 repositories {
+	mavenLocal()
 	mavenCentral()
 }
 
 dependencies {
+	api("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -30,6 +34,7 @@ dependencies {
 	testImplementation("io.projectreactor:reactor-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
+	testImplementation("org.springframework.security:spring-security-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -41,4 +46,15 @@ kotlin {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+publishing {
+	publications {
+		create<MavenPublication>("mavenJava") {
+			from(components["java"])
+		}
+	}
+	repositories {
+		mavenLocal()
+	}
 }
