@@ -1,0 +1,5 @@
+fint:
+  security:
+    enabled: true
+    required-fint-type: client
+    jwt-type: core
