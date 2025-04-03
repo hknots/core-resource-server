@@ -4,9 +4,9 @@ import no.fintlabs.resource.server.enums.FintScope
 import no.fintlabs.resource.server.enums.FintType
 import no.fintlabs.resource.server.enums.JwtType
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.context.annotation.Configuration
+import org.springframework.stereotype.Component
 
-@Configuration
+@Component
 @ConfigurationProperties("fint.security")
 class SecurityProperties {
 
