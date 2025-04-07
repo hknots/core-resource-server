@@ -14,7 +14,7 @@ class CoreAccessService(
 
     fun authorizeCorePrincipal(
         monoAuthentication: Mono<Authentication>,
-        authorizationContext: AuthorizationContext
+        authorizationContext: AuthorizationContext?
     ): Mono<AuthorizationDecision> = monoAuthentication.map { authentication ->
         val corePrincipal = authentication as CorePrincipal
 
