@@ -20,9 +20,9 @@ class SecurityConfiguration(
 
     @Bean
     fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
-        if (securityProperties.enabled) fintSecurity(http) else permitAll(http)
+        if (securityProperties.enabled) authorizeRequest(http) else permitAll(http)
 
-    private fun fintSecurity(http: ServerHttpSecurity): SecurityWebFilterChain =
+    private fun authorizeRequest(http: ServerHttpSecurity): SecurityWebFilterChain =
         http.authorizeExchange { exchanges ->
             configureExchanges(exchanges)
         }.oauth2ResourceServer { oauth2 ->
