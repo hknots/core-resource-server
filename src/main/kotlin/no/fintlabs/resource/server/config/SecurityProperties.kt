@@ -13,7 +13,7 @@ class SecurityProperties {
     var enabled: Boolean = true
     var issuerUri: String = "https://idp.felleskomponent.no/nidp/oauth/nam"
     var jwtType: JwtType = JwtType.CORE
-    var requiredFintType: FintType? = null
+    var fintType: FintType? = null
     var requiredScopes: List<FintScope>? = null
     var exposedEndpoints: List<String>? = null
 }

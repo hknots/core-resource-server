@@ -18,7 +18,7 @@ class CoreAccessService(
     ): Mono<AuthorizationDecision> = monoAuthentication.map { authentication ->
         val corePrincipal = authentication as CorePrincipal
 
-        val typeMatches = securityProperties.requiredFintType?.let { requiredType ->
+        val typeMatches = securityProperties.fintType?.let { requiredType ->
             when (requiredType) {
                 FintType.CLIENT -> corePrincipal.isClient()
                 FintType.ADAPTER -> corePrincipal.isAdapter()
