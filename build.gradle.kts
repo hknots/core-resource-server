@@ -48,14 +48,21 @@ tasks.withType<Test> {
 }
 
 publishing {
+	repositories {
+		maven {
+			url = uri("https://repo.fintlabs.no/releases")
+			credentials {
+				username = System.getenv("REPOSILITE_USERNAME")
+				password = System.getenv("REPOSILITE_PASSWORD")
+			}
+			authentication {
+				create<BasicAuthentication>("basic")
+			}
+		}
+	}
 	publications {
-		create<MavenPublication>("mavenJava") {
+		create<MavenPublication>("maven") {
 			from(components["java"])
 		}
 	}
-	repositories {
-		mavenLocal()
-	}
 }
-
-apply(from = "https://raw.githubusercontent.com/FINTLabs/fint-buildscripts/master/reposilite.ga.gradle")
