@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "no.fintlabs"
-version = "0.0.1-SNAPSHOT"
+version = project.findProperty("version") as String? ?: "0.0.1-SNAPSHOT"
 
 java {
 	toolchain {
@@ -57,3 +57,5 @@ publishing {
 		mavenLocal()
 	}
 }
+
+apply(from = "https://raw.githubusercontent.com/FINTLabs/fint-buildscripts/master/reposilite.ga.gradle")
