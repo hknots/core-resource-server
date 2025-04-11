@@ -47,6 +47,10 @@ tasks.withType<Test> {
 	useJUnitPlatform()
 }
 
+tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
+	enabled = false
+}
+
 publishing {
 	repositories {
 		maven {
