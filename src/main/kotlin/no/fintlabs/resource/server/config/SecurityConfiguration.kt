@@ -3,6 +3,7 @@ package no.fintlabs.resource.server.config
 import no.fintlabs.resource.server.CoreAccessService
 import no.fintlabs.resource.server.converter.CorePrincipalConverter
 import no.fintlabs.resource.server.enums.JwtType
+import no.fintlabs.resource.server.opa.OpaService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
@@ -13,10 +14,11 @@ import org.springframework.security.web.server.SecurityWebFilterChain
 @Configuration
 @EnableWebFluxSecurity
 class SecurityConfiguration(
-    private val securityProperties: SecurityProperties
+    private val securityProperties: SecurityProperties,
+    private val opaService: OpaService
 ) {
 
-    private val coreAccessService = CoreAccessService(securityProperties)
+    private val coreAccessService = CoreAccessService(securityProperties, opaService)
 
     @Bean
     fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
