@@ -3,23 +3,14 @@ package no.fintlabs.resource.server
 import no.fintlabs.resource.server.authentication.CorePrincipal
 import no.fintlabs.resource.server.config.SecurityProperties
 import no.fintlabs.resource.server.enums.FintType
-import no.fintlabs.resource.server.opa.OpaService
-import no.fintlabs.resource.server.opa.model.OpaRequest
-import org.springframework.security.authorization.AuthorizationDecision
-import org.springframework.security.core.Authentication
-import org.springframework.security.web.server.authorization.AuthorizationContext
-import reactor.core.publisher.Mono
+import java.security.Principal
 
 class CoreAccessService(
-    private val securityProperties: SecurityProperties,
-    private val opaService: OpaService
+    private val securityProperties: SecurityProperties
 ) {
 
-    fun authorizeCorePrincipal(
-        monoAuthentication: Mono<Authentication>,
-        authorizationContext: AuthorizationContext?
-    ): Mono<AuthorizationDecision> = monoAuthentication.flatMap { authentication ->
-        val corePrincipal = authentication as CorePrincipal
+    fun authorizeCorePrincipal(principal: Principal): Boolean {
+        val corePrincipal = principal as CorePrincipal
 
         val typeMatches = securityProperties.fintType?.let { requiredType ->
             when (requiredType) {
@@ -32,11 +23,7 @@ class CoreAccessService(
             corePrincipal.scopes.contains(requiredScope.formattedValue)
         } ?: true
 
-        opaService.isAuthorized(
-            OpaRequest.from(corePrincipal.username, authorizationContext!!.exchange.request)
-        ).map { isAuthorized ->
-            AuthorizationDecision(isAuthorized && typeMatches && scopeMatches)
-        }
+        return typeMatches && scopeMatches
     }
 
 }
