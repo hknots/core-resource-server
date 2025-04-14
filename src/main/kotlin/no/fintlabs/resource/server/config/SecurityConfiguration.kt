@@ -5,7 +5,6 @@ import no.fintlabs.resource.server.converter.CorePrincipalConverter
 import no.fintlabs.resource.server.enums.JwtType
 import no.fintlabs.resource.server.opa.OpaClient
 import no.fintlabs.resource.server.opa.OpaService
-import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authorization.AuthorizationDecision
@@ -16,7 +15,6 @@ import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.security.web.server.authorization.AuthorizationContext
-import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
 import java.security.Principal
 
@@ -24,11 +22,11 @@ import java.security.Principal
 @EnableWebFluxSecurity
 class SecurityConfiguration(
     private val securityProperties: SecurityProperties,
-    @Qualifier("opaWebClient") webClient: WebClient
+    opaClient: OpaClient
 ) {
 
     private val coreAccessService = CoreAccessService(securityProperties)
-    private val opaService = OpaService(securityProperties, OpaClient(webClient))
+    private val opaService = OpaService(securityProperties, opaClient)
 
     @Bean
     fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
