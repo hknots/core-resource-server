@@ -13,18 +13,20 @@ class CoreAccessService(
     fun isAuthorized(principal: Principal) =
         takeIf { securityProperties.jwtType == JwtType.CORE }?.let {
             val corePrincipal = principal as CorePrincipal
-
-            val typeMatches = securityProperties.fintType?.let { requiredType ->
-                when (requiredType) {
-                    FintType.CLIENT -> corePrincipal.isClient()
-                    FintType.ADAPTER -> corePrincipal.isAdapter()
-                }
-            } ?: true
-
-            val scopeMatches = securityProperties.requiredScopes?.any { requiredScope ->
-                corePrincipal.scopes.contains(requiredScope.formattedValue)
-            } ?: true
-
-            return typeMatches && scopeMatches
+            return typeMatches(corePrincipal) && scopeMatches(corePrincipal)
         } ?: true
+
+    private fun typeMatches(corePrincipal: CorePrincipal) =
+        securityProperties.fintType?.let { requiredType ->
+            when (requiredType) {
+                FintType.CLIENT -> corePrincipal.isClient()
+                FintType.ADAPTER -> corePrincipal.isAdapter()
+            }
+        } ?: true
+
+    private fun scopeMatches(corePrincipal: CorePrincipal) =
+        securityProperties.requiredScopes?.any { requiredScope ->
+            corePrincipal.scopes.contains(requiredScope.formattedValue)
+        } ?: true
+
 }
