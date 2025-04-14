@@ -10,7 +10,7 @@ class CoreAccessService(
     private val securityProperties: SecurityProperties
 ) {
 
-    fun authorizeCorePrincipal(principal: Principal) =
+    fun isAuthorized(principal: Principal) =
         takeIf { securityProperties.jwtType == JwtType.CORE }?.let {
             val corePrincipal = principal as CorePrincipal
 
@@ -26,5 +26,5 @@ class CoreAccessService(
             } ?: true
 
             return typeMatches && scopeMatches
-        } ?: false
+        } ?: true
 }
