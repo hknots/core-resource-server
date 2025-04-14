@@ -5,6 +5,7 @@ import no.fintlabs.resource.server.authentication.CorePrincipal
 import no.fintlabs.resource.server.config.SecurityProperties
 import no.fintlabs.resource.server.enums.FintScope
 import no.fintlabs.resource.server.enums.FintType
+import no.fintlabs.resource.server.opa.OpaService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
@@ -14,6 +15,7 @@ import reactor.test.StepVerifier
 class CoreAccessServiceTest {
 
     private lateinit var corePrincipal: CorePrincipal
+    private val opaService = mock(OpaService::class.java)
 
     @BeforeEach
     fun setUp() {
@@ -28,7 +30,7 @@ class CoreAccessServiceTest {
             fintType = FintType.CLIENT
             requiredScopes = listOf(FintScope.FINT_CLIENT)
         }
-        val coreAccessService = CoreAccessService(securityProperties)
+        val coreAccessService = CoreAccessService(securityProperties, opaService)
 
         val decisionMono = coreAccessService.authorizeCorePrincipal(mono { corePrincipal }, null)
 
@@ -46,7 +48,7 @@ class CoreAccessServiceTest {
             fintType = FintType.CLIENT
             requiredScopes = listOf(FintScope.FINT_CLIENT)
         }
-        val coreAccessService = CoreAccessService(securityProperties)
+        val coreAccessService = CoreAccessService(securityProperties, opaService)
 
         // Act
         val decisionMono = coreAccessService.authorizeCorePrincipal(mono { corePrincipal }, null)
@@ -66,7 +68,7 @@ class CoreAccessServiceTest {
             fintType = FintType.CLIENT
             requiredScopes = listOf(FintScope.FINT_CLIENT)
         }
-        val coreAccessService = CoreAccessService(securityProperties)
+        val coreAccessService = CoreAccessService(securityProperties, opaService)
 
         // Act
         val decisionMono = coreAccessService.authorizeCorePrincipal(mono { corePrincipal }, null)
@@ -87,7 +89,7 @@ class CoreAccessServiceTest {
             fintType = null
             requiredScopes = null
         }
-        val coreAccessService = CoreAccessService(securityProperties)
+        val coreAccessService = CoreAccessService(securityProperties, opaService)
 
         // Act
         val decisionMono = coreAccessService.authorizeCorePrincipal(mono { corePrincipal }, null)
