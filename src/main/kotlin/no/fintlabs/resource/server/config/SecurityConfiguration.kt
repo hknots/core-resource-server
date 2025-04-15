@@ -39,13 +39,10 @@ class SecurityConfiguration(
             oauth2.jwt { jwt -> configureJwtConverter(jwt) }
         }.build()
 
-    private fun configureExchanges(exchanges: ServerHttpSecurity.AuthorizeExchangeSpec) {
+    private fun configureExchanges(exchanges: ServerHttpSecurity.AuthorizeExchangeSpec) =
         securityProperties.exposedEndpoints?.toTypedArray()?.let { endpoints ->
             exchanges.pathMatchers(*endpoints).permitAll()
-        }
-
-        exchanges.anyExchange().access(this::authorizeRequest)
-    }
+        }.also { exchanges.anyExchange().access(this::authorizeRequest) }
 
     private fun authorizeRequest(
         monoAuthentication: Mono<Authentication>,
