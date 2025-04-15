@@ -1,15 +1,16 @@
 package no.fintlabs.resource.server.opa.model
 
 import org.springframework.http.server.reactive.ServerHttpRequest
+import org.springframework.security.oauth2.jwt.Jwt
 
 class OpaRequest(
     val input: OpaInput
 ) {
     companion object {
-        fun from(username: String, request: ServerHttpRequest) =
+        fun from(jwt: Jwt, request: ServerHttpRequest) =
             OpaRequest(
                 OpaInput(
-                    username,
+                    jwt.getClaimAsString("cn"),
                     request.uri.host.split('.').first()
                 )
             )

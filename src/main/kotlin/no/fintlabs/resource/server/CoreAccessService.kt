@@ -3,40 +3,30 @@ package no.fintlabs.resource.server
 import no.fintlabs.resource.server.authentication.CorePrincipal
 import no.fintlabs.resource.server.config.SecurityProperties
 import no.fintlabs.resource.server.enums.FintType
-import no.fintlabs.resource.server.opa.OpaService
-import no.fintlabs.resource.server.opa.model.OpaRequest
-import org.springframework.security.authorization.AuthorizationDecision
-import org.springframework.security.core.Authentication
-import org.springframework.security.web.server.authorization.AuthorizationContext
-import reactor.core.publisher.Mono
+import no.fintlabs.resource.server.enums.JwtType
+import java.security.Principal
 
 class CoreAccessService(
-    private val securityProperties: SecurityProperties,
-    private val opaService: OpaService
+    private val securityProperties: SecurityProperties
 ) {
 
-    fun authorizeCorePrincipal(
-        monoAuthentication: Mono<Authentication>,
-        authorizationContext: AuthorizationContext?
-    ): Mono<AuthorizationDecision> = monoAuthentication.flatMap { authentication ->
-        val corePrincipal = authentication as CorePrincipal
+    fun isAuthorized(principal: Principal) =
+        takeIf { securityProperties.jwtType == JwtType.CORE }?.let {
+            val corePrincipal = principal as CorePrincipal
+            return typeMatches(corePrincipal) && scopeMatches(corePrincipal)
+        } ?: true
 
-        val typeMatches = securityProperties.fintType?.let { requiredType ->
+    private fun typeMatches(corePrincipal: CorePrincipal) =
+        securityProperties.fintType?.let { requiredType ->
             when (requiredType) {
                 FintType.CLIENT -> corePrincipal.isClient()
                 FintType.ADAPTER -> corePrincipal.isAdapter()
             }
         } ?: true
 
-        val scopeMatches = securityProperties.requiredScopes?.any { requiredScope ->
+    private fun scopeMatches(corePrincipal: CorePrincipal) =
+        securityProperties.requiredScopes?.any { requiredScope ->
             corePrincipal.scopes.contains(requiredScope.formattedValue)
         } ?: true
-
-        opaService.isAuthorized(
-            OpaRequest.from(corePrincipal.username, authorizationContext!!.exchange.request)
-        ).map { isAuthorized ->
-            AuthorizationDecision(isAuthorized && typeMatches && scopeMatches)
-        }
-    }
 
 }

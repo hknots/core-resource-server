@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "no.fintlabs"
-version = "0.0.1-SNAPSHOT"
+version = project.findProperty("version") as String? ?: "0.0.1-SNAPSHOT"
 
 java {
 	toolchain {
@@ -47,13 +47,26 @@ tasks.withType<Test> {
 	useJUnitPlatform()
 }
 
+tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
+	enabled = false
+}
+
 publishing {
-	publications {
-		create<MavenPublication>("mavenJava") {
-			from(components["java"])
+	repositories {
+		maven {
+			url = uri("https://repo.fintlabs.no/releases")
+			credentials {
+				username = System.getenv("REPOSILITE_USERNAME")
+				password = System.getenv("REPOSILITE_PASSWORD")
+			}
+			authentication {
+				create<BasicAuthentication>("basic")
+			}
 		}
 	}
-	repositories {
-		mavenLocal()
+	publications {
+		create<MavenPublication>("maven") {
+			from(components["java"])
+		}
 	}
 }
