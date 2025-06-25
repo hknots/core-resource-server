@@ -13,9 +13,9 @@ class OpaService(
 ) {
 
     fun isAuthorized(jwt: Jwt, request: ServerHttpRequest): Mono<Boolean> =
-        takeIf { opaProperties.enabled }?.let {
-            opaClient.getDecision(OpaRequest.from(jwt, request)).map { it.result }
-        } ?: mono { true }
+        takeIf { opaProperties.enabled }
+            ?.let { opaClient.getDecision(OpaRequest(jwt, request)).map { it.result } }
+            ?: mono { true }
 
 
 }
