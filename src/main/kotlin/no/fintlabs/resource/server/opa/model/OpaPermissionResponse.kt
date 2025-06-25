@@ -1,5 +1,5 @@
 package no.fintlabs.resource.server.opa.model
 
-data class OpaResponse(
+data class OpaPermissionResponse(
     val result: Boolean = false
 )

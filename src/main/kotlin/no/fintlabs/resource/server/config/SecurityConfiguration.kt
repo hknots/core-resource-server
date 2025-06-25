@@ -3,7 +3,6 @@ package no.fintlabs.resource.server.config
 import no.fintlabs.resource.server.CoreAccessService
 import no.fintlabs.resource.server.converter.CorePrincipalConverter
 import no.fintlabs.resource.server.enums.JwtType
-import no.fintlabs.resource.server.opa.OpaClient
 import no.fintlabs.resource.server.opa.OpaService
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -22,35 +21,32 @@ import java.security.Principal
 @EnableWebFluxSecurity
 class SecurityConfiguration(
     private val securityProperties: SecurityProperties,
-    opaClient: OpaClient
+    private val opaService: OpaService
 ) {
 
     private val coreAccessService = CoreAccessService(securityProperties)
-    private val opaService = OpaService(securityProperties, opaClient)
 
     @Bean
     fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
         if (securityProperties.enabled) authorizeRequest(http) else permitAll(http)
 
     private fun authorizeRequest(http: ServerHttpSecurity): SecurityWebFilterChain =
-        http.authorizeExchange { exchanges ->
-            configureExchanges(exchanges)
-        }.oauth2ResourceServer { oauth2 ->
-            oauth2.jwt { jwt -> configureJwtConverter(jwt) }
-        }.build()
+        http.authorizeExchange { configureExchanges(it) }
+            .oauth2ResourceServer { it.jwt { jwt -> configureJwtConverter(jwt) } }
+            .build()
 
     private fun configureExchanges(exchanges: ServerHttpSecurity.AuthorizeExchangeSpec) =
-        securityProperties.exposedEndpoints?.toTypedArray()?.let { endpoints ->
-            exchanges.pathMatchers(*endpoints).permitAll()
-        }.also { exchanges.anyExchange().access(this::authorizeRequest) }
+        securityProperties.exposedEndpoints
+            ?.toTypedArray()
+            ?.let { endpoints -> exchanges.pathMatchers(*endpoints).permitAll() }
+            .also { exchanges.anyExchange().access(this::authorizeRequest) }
 
     private fun authorizeRequest(
         monoAuthentication: Mono<Authentication>,
         authorizationContext: AuthorizationContext?
     ): Mono<AuthorizationDecision> = monoAuthentication.flatMap { authentication ->
-        val principal = authentication as Principal
+        val principal = authentication.principal as Principal
         val request = authorizationContext!!.exchange.request
-
         val corePrincipalAuthorized = coreAccessService.isAuthorized(principal)
         val opaMono = opaService.isAuthorized(principal as Jwt, request)
 
