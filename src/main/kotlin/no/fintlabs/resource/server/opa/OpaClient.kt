@@ -14,7 +14,7 @@ class OpaClient(
 
     fun getDecision(opaRequest: OpaRequest) =
         webClient.post()
-            .uri("/v1/data/core/allow")
+            .uri("/v1/data/core")
             .bodyValue(opaRequest)
             .retrieve()
             .bodyToMono(OpaResponse::class.java)
