@@ -44,7 +44,7 @@ class SecurityConfiguration(
             ?.let { endpoints -> exchanges.pathMatchers(*endpoints).permitAll() }
             .also { exchanges.anyExchange().access(this::authorizeRequest) }
 
-    internal fun authorizeRequest(
+    fun authorizeRequest(
         auth: Mono<Authentication>,
         ctx: AuthorizationContext?
     ): Mono<AuthorizationDecision> =

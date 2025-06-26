@@ -63,3 +63,44 @@ publishing {
 		mavenLocal()
 	}
 }
+
+configureTestSets()
+configureTestConfigs()
+configureTestTasks()
+
+fun configureTestSets() = sourceSets {
+	val unit by creating {
+		kotlin.srcDir("src/test/unit/kotlin")
+		resources.srcDir("src/test/unit/resources")
+		compileClasspath += main.get().output + configurations["testRuntimeClasspath"]
+		runtimeClasspath   += output + compileClasspath
+	}
+	val integration by creating {
+		kotlin.srcDir("src/test/integration/kotlin")
+		resources.srcDir("src/test/integration/resources")
+		compileClasspath += main.get().output + configurations["testRuntimeClasspath"]
+		runtimeClasspath   += output + compileClasspath
+	}
+}
+
+fun configureTestConfigs() {
+	listOf("unit", "integration").forEach { name ->
+		configurations["${name}Implementation"].extendsFrom(configurations["testImplementation"])
+		configurations["${name}RuntimeOnly"].extendsFrom(configurations["testRuntimeOnly"])
+	}
+}
+
+fun configureTestTasks() {
+	tasks.register<Test>("unitTest") {
+		testClassesDirs = sourceSets["unit"].output.classesDirs
+		classpath        = sourceSets["unit"].runtimeClasspath
+	}
+	tasks.register<Test>("integrationTest") {
+		shouldRunAfter("unitTest")
+		testClassesDirs = sourceSets["integration"].output.classesDirs
+		classpath        = sourceSets["integration"].runtimeClasspath
+	}
+	tasks.named("check") {
+		dependsOn("unitTest", "integrationTest")
+	}
+}
