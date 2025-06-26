@@ -52,7 +52,6 @@ class SecurityConfiguration(
         }
 
     private fun configureJwtConverter(jwtSpec: ServerHttpSecurity.OAuth2ResourceServerSpec.JwtSpec) {
-        println("– configuring JWT converter; jwtType=${securityProperties.jwtType}")
         if (securityProperties.jwtType == JwtType.CORE) {
             jwtSpec.jwtAuthenticationConverter(
                 ReactiveJwtAuthenticationConverterAdapter(CorePrincipalConverter())
