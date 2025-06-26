@@ -1,94 +1,66 @@
 package no.fintlabs.resource.server.config
 
+import kotlinx.coroutines.reactor.mono
 import no.fintlabs.resource.server.CoreAccessService
-import no.fintlabs.resource.server.authentication.CorePrincipal
 import no.fintlabs.resource.server.converter.CorePrincipalConverter
 import no.fintlabs.resource.server.enums.JwtType
 import no.fintlabs.resource.server.opa.OpaService
-import no.fintlabs.resource.server.opa.model.OpaResponse
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authorization.AuthorizationDecision
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.core.Authentication
-import org.springframework.security.oauth2.jwt.Jwt
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.security.web.server.authorization.AuthorizationContext
-import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 
 @Configuration
 @EnableWebFluxSecurity
 class SecurityConfiguration(
     private val securityProperties: SecurityProperties,
-    private val opaService: OpaService
+    opaService: OpaService
 ) {
 
-    private val coreAccessService = CoreAccessService(securityProperties)
+    private val coreAccessService = CoreAccessService(securityProperties, opaService)
 
     @Bean
     fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
         if (securityProperties.enabled) authorizeRequest(http) else permitAll(http)
 
     private fun authorizeRequest(http: ServerHttpSecurity): SecurityWebFilterChain =
-        http.authorizeExchange { configureExchanges(it) }
-            .oauth2ResourceServer { it.jwt { jwt -> configureJwtConverter(jwt) } }
+        http
+            .oauth2ResourceServer { it.jwt(::configureJwtConverter) }
+            .authorizeExchange(::configureExchanges)
             .build()
 
     private fun configureExchanges(exchanges: ServerHttpSecurity.AuthorizeExchangeSpec) =
         securityProperties.exposedEndpoints
             ?.toTypedArray()
-            ?.let { endpoints -> exchanges.pathMatchers(*endpoints).permitAll() }
-            .also { exchanges.anyExchange().access(this::authorizeRequest) }
+            ?.let { exchanges.pathMatchers(*it).permitAll() }
+            .also { exchanges.anyExchange().access(::evaluateAuthorization) }
 
-    fun authorizeRequest(
+    private fun evaluateAuthorization(
         auth: Mono<Authentication>,
-        ctx: AuthorizationContext?
+        ctx: AuthorizationContext
     ): Mono<AuthorizationDecision> =
         auth.flatMap { authentication ->
-            val raw = authentication.principal
-            val coreOk = coreAccessService.isAuthorized(raw)
-
-            extractJwt(raw)
-                ?.let { jwt ->
-                    opaService.requestOpa(jwt, ctx!!.exchange.request)
-                        .map { opa ->
-                            if (opa.allow) attachOpaHeaders(ctx.exchange, opa)
-                            AuthorizationDecision(coreOk && opa.allow)
-                        }
-                }
-                ?: Mono.just(AuthorizationDecision(false))
+            if (securityProperties.jwtType != JwtType.CORE) mono { AuthorizationDecision(true) }
+            else coreAccessService.isAuthorized(ctx.exchange!!, authentication)
+                .map { AuthorizationDecision(it) }
         }
 
-    private fun extractJwt(raw: Any): Jwt? = when (raw) {
-        is CorePrincipal -> raw.token
-        is Jwt -> raw
-        is JwtAuthenticationToken -> raw.token
-        else -> null
-    }
-
-    private fun attachOpaHeaders(exchange: ServerWebExchange, opa: OpaResponse) =
-        exchange.attributes.apply {
-            put("x-opa-fields", opa.fields.joinToString(","))
-            put("x-opa-relations", opa.relations.joinToString(","))
-        }
-
-    private fun configureJwtConverter(jwtConfigurer: ServerHttpSecurity.OAuth2ResourceServerSpec.JwtSpec) {
-        when (securityProperties.jwtType) {
-            JwtType.CORE -> jwtConfigurer.jwtAuthenticationConverter(
+    private fun configureJwtConverter(jwtSpec: ServerHttpSecurity.OAuth2ResourceServerSpec.JwtSpec) {
+        println("– configuring JWT converter; jwtType=${securityProperties.jwtType}")
+        if (securityProperties.jwtType == JwtType.CORE) {
+            jwtSpec.jwtAuthenticationConverter(
                 ReactiveJwtAuthenticationConverterAdapter(CorePrincipalConverter())
             )
-
-            JwtType.DEFAULT -> Unit
         }
     }
 
     private fun permitAll(http: ServerHttpSecurity): SecurityWebFilterChain =
-        http.authorizeExchange { exchanges ->
-            exchanges.anyExchange().permitAll()
-        }.build()
-
+        http.authorizeExchange { it.anyExchange().permitAll() }
+            .build()
 }
