@@ -1,3 +1,10 @@
+import org.gradle.api.Project
+import org.gradle.api.tasks.bundling.Jar
+import org.gradle.api.tasks.testing.Test
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.kotlin.dsl.*
+
 plugins {
 	kotlin("jvm") version "1.9.25"
 	kotlin("plugin.spring") version "1.9.25"
@@ -8,11 +15,11 @@ plugins {
 }
 
 group = "no.fintlabs"
-version = project.findProperty("version") ?: "0.0.1-SNAPSHOT"
+version = project.findProperty("version") as String? ?: "0.0.1-SNAPSHOT"
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(21)
+		languageVersion.set(JavaLanguageVersion.of(21))
 	}
 }
 
@@ -33,74 +40,69 @@ dependencies {
 	testImplementation("io.projectreactor:reactor-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
-	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("io.mockk:mockk:1.14.3")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 kotlin {
-	compilerOptions {
-		freeCompilerArgs.addAll("-Xjsr305=strict")
-	}
+	compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") }
 }
 
-tasks.withType<Test> {
-	useJUnitPlatform()
+tasks.withType<Test> { useJUnitPlatform() }
+tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> { enabled = false }
+
+fun Project.sourceJar(): TaskProvider<Jar> = tasks.register<Jar>("sourceJar") {
+	archiveClassifier.set("sources")
+	from(sourceSets["main"].allSource)
 }
 
-tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> {
-	enabled = false
-}
-
-
-publishing {
+fun Project.configurePublishing(sources: TaskProvider<Jar>) = publishing {
 	publications {
 		create<MavenPublication>("mavenJava") {
 			from(components["java"])
+			artifact(sources.get())
 		}
 	}
-	repositories {
-		mavenLocal()
-	}
+	repositories { mavenLocal() }
 }
 
-configureTestSets()
-configureTestConfigs()
-configureTestTasks()
+val sourcesJar = sourceJar()
+configurePublishing(sourcesJar)
 
-fun configureTestSets() = sourceSets {
+fun Project.configureTestSets() = sourceSets {
 	val unit by creating {
 		kotlin.srcDir("src/test/unit/kotlin")
 		resources.srcDir("src/test/unit/resources")
 		compileClasspath += main.get().output + configurations["testRuntimeClasspath"]
-		runtimeClasspath   += output + compileClasspath
+		runtimeClasspath += output + compileClasspath
 	}
 	val integration by creating {
 		kotlin.srcDir("src/test/integration/kotlin")
 		resources.srcDir("src/test/integration/resources")
 		compileClasspath += main.get().output + configurations["testRuntimeClasspath"]
-		runtimeClasspath   += output + compileClasspath
+		runtimeClasspath += output + compileClasspath
 	}
 }
 
-fun configureTestConfigs() {
-	listOf("unit", "integration").forEach { name ->
-		configurations["${name}Implementation"].extendsFrom(configurations["testImplementation"])
-		configurations["${name}RuntimeOnly"].extendsFrom(configurations["testRuntimeOnly"])
+fun Project.configureTestConfigs() = listOf("unit", "integration")
+	.forEach {
+		configurations["${it}Implementation"].extendsFrom(configurations["testImplementation"])
+		configurations["${it}RuntimeOnly"].extendsFrom(configurations["testRuntimeOnly"])
 	}
-}
 
-fun configureTestTasks() {
+fun Project.configureTestTasks() {
 	tasks.register<Test>("unitTest") {
 		testClassesDirs = sourceSets["unit"].output.classesDirs
-		classpath        = sourceSets["unit"].runtimeClasspath
+		classpath = sourceSets["unit"].runtimeClasspath
 	}
 	tasks.register<Test>("integrationTest") {
 		shouldRunAfter("unitTest")
 		testClassesDirs = sourceSets["integration"].output.classesDirs
-		classpath        = sourceSets["integration"].runtimeClasspath
+		classpath = sourceSets["integration"].runtimeClasspath
 	}
-	tasks.named("check") {
-		dependsOn("unitTest", "integrationTest")
-	}
+	tasks.named("check") { dependsOn("unitTest", "integrationTest") }
 }
+
+configureTestSets()
+configureTestConfigs()
+configureTestTasks()
