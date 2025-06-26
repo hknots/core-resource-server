@@ -9,5 +9,6 @@ class OpaProperties {
 
     var enabled: Boolean = false
     var filter: Boolean = true
+    var url: String = "http://fint-core-access-control.fint-core.svc.cluster.local:8080"
 
 }
