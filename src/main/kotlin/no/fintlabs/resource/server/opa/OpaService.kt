@@ -3,6 +3,7 @@ package no.fintlabs.resource.server.opa
 import kotlinx.coroutines.reactor.mono
 import no.fintlabs.resource.server.config.OpaProperties
 import no.fintlabs.resource.server.opa.model.OpaRequest
+import no.fintlabs.resource.server.opa.model.OpaResponse
 import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
@@ -14,9 +15,9 @@ class OpaService(
     private val opaClient: OpaClient
 ) {
 
-    fun isAuthorized(jwt: Jwt, request: ServerHttpRequest): Mono<Boolean> =
+    fun requestOpa(jwt: Jwt, request: ServerHttpRequest): Mono<OpaResponse> =
         takeIf { opaProperties.enabled }
-            ?.let { opaClient.getDecision(OpaRequest(jwt, request)).map { it.result } }
-            ?: mono { true }
+            ?.let { opaClient.getDecision(OpaRequest(jwt, request)) }
+            ?: mono { OpaResponse() }
 
 }
