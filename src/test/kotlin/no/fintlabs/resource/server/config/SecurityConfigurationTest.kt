@@ -2,6 +2,7 @@ package no.fintlabs.resource.server.config
 
 import io.mockk.every
 import io.mockk.mockk
+import no.fintlabs.resource.server.authentication.CorePrincipal
 import no.fintlabs.resource.server.enums.JwtType
 import no.fintlabs.resource.server.opa.OpaService
 import no.fintlabs.resource.server.opa.model.OpaResponse
@@ -16,57 +17,106 @@ import org.springframework.security.web.server.authorization.AuthorizationContex
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
-import kotlin.test.assertEquals
+import java.security.Principal
 import java.time.Instant
+import kotlin.test.assertEquals
 
 internal class SecurityConfigurationTest {
 
     private val opaService: OpaService = mockk()
-    private val securityProps: SecurityProperties = SecurityProperties().apply {
-        enabled = true
-        jwtType = JwtType.DEFAULT
-    }
-    private val config: SecurityConfiguration = SecurityConfiguration(securityProps, opaService)
+    private val securityProps = SecurityProperties().apply { enabled = true }
+    private lateinit var config: SecurityConfiguration
     private val jwt: Jwt = Jwt(
         "dummy-token",
         Instant.now(),
         Instant.now().plusSeconds(3600),
         mapOf("alg" to "none"),
-        mapOf("sub" to "user")
+        mapOf(
+            "sub" to "user",
+            "fintAssetIDs" to "assetId",
+            "cn" to "username@client.fintlabs.no",
+            "scope" to "fint-client",
+            "Roles" to ""
+        )
     )
 
     private fun authContext(
         exchange: ServerWebExchange = MockServerWebExchange.from(MockServerHttpRequest.get("/"))
-    ): AuthorizationContext =
-        AuthorizationContext(exchange)
+    ) = AuthorizationContext(exchange)
 
-    private fun authToken(jwt: Jwt): Authentication =
-        UsernamePasswordAuthenticationToken(jwt, "", emptyList())
+    private fun authToken(principal: Any): Authentication =
+        UsernamePasswordAuthenticationToken(principal, "", emptyList())
 
-    private fun decision(opa: OpaResponse): Mono<AuthorizationDecision> {
+    private fun decision(principal: Any, opa: OpaResponse): Mono<AuthorizationDecision> {
         every { opaService.requestOpa(any(), any()) } returns Mono.just(opa)
         return config.authorizeRequest(
-            Mono.just(authToken(jwt)),
+            Mono.just(authToken(principal)),
             authContext()
         )
     }
 
     @Test
-    fun `core true opa true grants`() {
-        StepVerifier.create(decision(OpaResponse(result = true)))
+    fun `default mode core ignored, opa true grants`() {
+        securityProps.jwtType = JwtType.DEFAULT
+        config = SecurityConfiguration(securityProps, opaService)
+        StepVerifier.create(decision(jwt, OpaResponse(result = true)))
             .expectNextMatches { it.isGranted }
             .verifyComplete()
     }
 
     @Test
-    fun `core true opa false denies`() {
-        StepVerifier.create(decision(OpaResponse()))
+    fun `default mode opa false denies`() {
+        securityProps.jwtType = JwtType.DEFAULT
+        config = SecurityConfiguration(securityProps, opaService)
+        StepVerifier.create(decision(jwt, OpaResponse()))
+            .expectNextMatches { !it.isGranted }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `unknown principal denies`() {
+        securityProps.jwtType = JwtType.DEFAULT
+        config = SecurityConfiguration(securityProps, opaService)
+        StepVerifier.create(decision(object : Principal {
+            override fun getName() = "foo"
+        }, OpaResponse(result = true)))
+            .expectNextMatches { !it.isGranted }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `core mode plain jwt denies without OPA`() {
+        securityProps.jwtType = JwtType.CORE
+        config = SecurityConfiguration(securityProps, opaService)
+        StepVerifier.create(decision(jwt, OpaResponse(result = true)))
+            .expectNextMatches { !it.isGranted }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `core mode corePrincipal grants when opa true`() {
+        securityProps.jwtType = JwtType.CORE
+        config = SecurityConfiguration(securityProps, opaService)
+        val corePrincipal = CorePrincipal(jwt, emptyList())
+        StepVerifier.create(decision(corePrincipal, OpaResponse(result = true)))
+            .expectNextMatches { it.isGranted }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `core mode corePrincipal opa false denies`() {
+        securityProps.jwtType = JwtType.CORE
+        config = SecurityConfiguration(securityProps, opaService)
+        val corePrincipal = CorePrincipal(jwt, emptyList())
+        StepVerifier.create(decision(corePrincipal, OpaResponse()))
             .expectNextMatches { !it.isGranted }
             .verifyComplete()
     }
 
     @Test
     fun `attributes on success`() {
+        securityProps.jwtType = JwtType.DEFAULT
+        config = SecurityConfiguration(securityProps, opaService)
         val exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/"))
         every { opaService.requestOpa(any(), any()) } returns
                 Mono.just(OpaResponse(true, setOf("f1"), setOf("r1")))
