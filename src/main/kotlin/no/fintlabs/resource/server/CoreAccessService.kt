@@ -4,17 +4,17 @@ import no.fintlabs.resource.server.authentication.CorePrincipal
 import no.fintlabs.resource.server.config.SecurityProperties
 import no.fintlabs.resource.server.enums.FintType
 import no.fintlabs.resource.server.enums.JwtType
-import java.security.Principal
 
 class CoreAccessService(
     private val securityProperties: SecurityProperties
 ) {
 
-    fun isAuthorized(principal: Principal): Boolean =
-        if (securityProperties.jwtType != JwtType.CORE) true
-        else {
-            val corePrincipal = principal as CorePrincipal
-            typeMatches(corePrincipal) && scopeMatches(corePrincipal)
+    fun isAuthorized(principal: Any): Boolean =
+        if (securityProperties.jwtType != JwtType.CORE) {
+            true
+        } else when (principal) {
+            is CorePrincipal -> typeMatches(principal) && scopeMatches(principal)
+            else -> false
         }
 
     private fun typeMatches(corePrincipal: CorePrincipal) =
