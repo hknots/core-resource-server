@@ -1,14 +1,22 @@
 package no.fintlabs.resource.server.opa.model
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.security.oauth2.jwt.Jwt
 
 class OpaRequest(val input: OpaInput) {
-    constructor(jwt: Jwt, request: ServerHttpRequest, useEnvHeader: Boolean) : this(
-        OpaInput(jwt, request, useEnvHeader)
-    )
+    constructor(jwt: Jwt, request: ServerHttpRequest, useEnvHeader: Boolean)
+            : this(OpaInput(jwt, request, useEnvHeader))
+
+    override fun toString() = mapper.writeValueAsString(this)
+
+    private companion object {
+        val mapper = jacksonObjectMapper()
+    }
 }
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 data class OpaInput(
     val username: String,
     val env: String,
