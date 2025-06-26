@@ -4,8 +4,8 @@ import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.security.oauth2.jwt.Jwt
 
 class OpaRequest(val input: OpaInput) {
-    constructor(jwt: Jwt, request: ServerHttpRequest) : this(
-        OpaInput(jwt, request)
+    constructor(jwt: Jwt, request: ServerHttpRequest, useEnvHeader: Boolean) : this(
+        OpaInput(jwt, request, useEnvHeader)
     )
 }
 
@@ -16,19 +16,21 @@ data class OpaInput(
     val packageName: String,
     val resourceName: String?
 ) {
-    constructor(jwt: Jwt, request: ServerHttpRequest) : this(
+    constructor(jwt: Jwt, request: ServerHttpRequest, useEnvHeader: Boolean) : this(
         jwt.getClaimAsString("cn"),
-        request.uri.host.substringBefore('.'),
-        request.uri.path.segment(0),
-        request.uri.path.segment(1),
+        resolveEnv(request, useEnvHeader),
+        request.uri.path.segment(0) ?: error("Missing domain segment"),
+        request.uri.path.segment(1) ?: error("Missing package segment"),
         request.uri.path.segmentOrNull(2)
     )
 }
 
+private fun resolveEnv(req: ServerHttpRequest, useEnvHeader: Boolean) =
+    if (useEnvHeader)
+        req.headers.getFirst("x-opa-env")?.takeIf(String::isNotBlank) ?: error("Missing X-Opa-Env header")
+    else
+        req.uri.host.substringBefore('.')
+
 private fun String.segments() = split('/').filter(String::isNotBlank)
-
-private fun String.segment(index: Int) =
-    segments().getOrNull(index) ?: error("Missing segment at index $index")
-
-private fun String.segmentOrNull(index: Int) =
-    segments().getOrNull(index)
+private fun String.segment(index: Int) = segments().getOrNull(index)
+private fun String.segmentOrNull(index: Int) = segments().getOrNull(index)

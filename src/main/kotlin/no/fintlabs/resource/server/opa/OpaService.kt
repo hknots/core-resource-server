@@ -17,7 +17,7 @@ class OpaService(
 
     fun requestOpa(jwt: Jwt, request: ServerHttpRequest): Mono<OpaResponse> =
         takeIf { opaProperties.enabled }
-            ?.let { opaClient.getDecision(OpaRequest(jwt, request)) }
+            ?.let { opaClient.getDecision(OpaRequest(jwt, request, opaProperties.useEnvHeader)) }
             ?: mono { OpaResponse() }
 
 }
