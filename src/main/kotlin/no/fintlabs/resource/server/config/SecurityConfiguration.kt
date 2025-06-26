@@ -56,8 +56,8 @@ class SecurityConfiguration(
                 ?.let { jwt ->
                     opaService.requestOpa(jwt, ctx!!.exchange.request)
                         .map { opa ->
-                            if (opa.result) attachOpaHeaders(ctx.exchange, opa)
-                            AuthorizationDecision(coreOk && opa.result)
+                            if (opa.allow) attachOpaHeaders(ctx.exchange, opa)
+                            AuthorizationDecision(coreOk && opa.allow)
                         }
                 }
                 ?: Mono.just(AuthorizationDecision(false))

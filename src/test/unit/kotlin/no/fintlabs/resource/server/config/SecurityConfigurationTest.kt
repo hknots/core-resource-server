@@ -59,7 +59,7 @@ internal class SecurityConfigurationTest {
     fun `default mode core ignored, opa true grants`() {
         securityProps.jwtType = JwtType.DEFAULT
         config = SecurityConfiguration(securityProps, opaService)
-        StepVerifier.create(decision(jwt, OpaResponse(result = true)))
+        StepVerifier.create(decision(jwt, OpaResponse(allow = true)))
             .expectNextMatches { it.isGranted }
             .verifyComplete()
     }
@@ -79,7 +79,7 @@ internal class SecurityConfigurationTest {
         config = SecurityConfiguration(securityProps, opaService)
         StepVerifier.create(decision(object : Principal {
             override fun getName() = "foo"
-        }, OpaResponse(result = true)))
+        }, OpaResponse(allow = true)))
             .expectNextMatches { !it.isGranted }
             .verifyComplete()
     }
@@ -88,7 +88,7 @@ internal class SecurityConfigurationTest {
     fun `core mode plain jwt denies without OPA`() {
         securityProps.jwtType = JwtType.CORE
         config = SecurityConfiguration(securityProps, opaService)
-        StepVerifier.create(decision(jwt, OpaResponse(result = true)))
+        StepVerifier.create(decision(jwt, OpaResponse(allow = true)))
             .expectNextMatches { !it.isGranted }
             .verifyComplete()
     }
@@ -98,7 +98,7 @@ internal class SecurityConfigurationTest {
         securityProps.jwtType = JwtType.CORE
         config = SecurityConfiguration(securityProps, opaService)
         val corePrincipal = CorePrincipal(jwt, emptyList())
-        StepVerifier.create(decision(corePrincipal, OpaResponse(result = true)))
+        StepVerifier.create(decision(corePrincipal, OpaResponse(allow = true)))
             .expectNextMatches { it.isGranted }
             .verifyComplete()
     }
