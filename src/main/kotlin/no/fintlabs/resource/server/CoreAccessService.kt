@@ -4,6 +4,8 @@ import no.fintlabs.resource.server.authentication.CorePrincipal
 import no.fintlabs.resource.server.config.SecurityProperties
 import no.fintlabs.resource.server.enums.FintType
 import no.fintlabs.resource.server.opa.OpaService
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.security.core.Authentication
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
@@ -13,30 +15,35 @@ class CoreAccessService(
     private val opaService: OpaService
 ) {
 
-    fun isAuthorized(exchange: ServerWebExchange, auth: Authentication): Mono<Boolean> =
-        when (auth) {
-            is CorePrincipal -> authorizeCore(auth, exchange)
+    private val logger: Logger = LoggerFactory.getLogger(CoreAccessService::class.java)
+
+    fun isAuthorized(exchange: ServerWebExchange, authentication: Authentication): Mono<Boolean> =
+        when (authentication) {
+            is CorePrincipal -> authorizeCore(authentication, exchange)
             else -> {
-                println("Authorization failed: not a CorePrincipal, authentication=$auth")
+                logger.debug("Authorization failed: not a CorePrincipal, authentication={}", authentication)
                 Mono.just(false)
             }
         }
 
-    private fun authorizeCore(p: CorePrincipal, ex: ServerWebExchange): Mono<Boolean> =
+    private fun authorizeCore(principal: CorePrincipal, exchange: ServerWebExchange): Mono<Boolean> =
         when {
-            !typeMatches(p) -> {
-                println("Authorization failed: typeMatches=false, requiredType=${securityProperties.fintType}, principal=$p")
+            !typeMatches(principal) -> {
+                logger.debug("Authorization failed: typeMatches=false, requiredType={}, principal={}",
+                    securityProperties.fintType, principal)
                 Mono.just(false)
             }
-            !scopeMatches(p) -> {
-                println("Authorization failed: scopeMatches=false, requiredScopes=${securityProperties.requiredScopes}, principalScopes=${p.scopes}")
+            !scopeMatches(principal) -> {
+                logger.debug("Authorization failed: scopeMatches=false, requiredScopes={}, principalScopes={}",
+                    securityProperties.requiredScopes, principal.scopes)
                 Mono.just(false)
             }
-            !roleMatches(p, ex) -> {
-                println("Authorization failed: roleMatches=false for path=${ex.request.uri.path}, principalRoles=${p.roles}")
+            !roleMatches(principal, exchange) -> {
+                logger.debug("Authorization failed: roleMatches=false for path={}, principalRoles={}",
+                    exchange.request.uri.path, principal.roles)
                 Mono.just(false)
             }
-            else -> opaCheck(p, ex)
+            else -> opaCheck(principal, exchange)
         }
 
     private fun typeMatches(p: CorePrincipal): Boolean =
