@@ -16,5 +16,5 @@ class SecurityProperties {
     var fintType: FintType? = null
     var requiredScopes: List<FintScope>? = null
     var exposedEndpoints: List<String>? = null
-    var opa: Boolean = false
+
 }
