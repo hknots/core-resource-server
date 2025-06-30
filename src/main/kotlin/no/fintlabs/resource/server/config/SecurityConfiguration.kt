@@ -2,9 +2,10 @@ package no.fintlabs.resource.server.config
 
 import kotlinx.coroutines.reactor.mono
 import no.fintlabs.resource.server.CoreAccessService
+import no.fintlabs.resource.server.authentication.CorePrincipal
 import no.fintlabs.resource.server.converter.CorePrincipalConverter
 import no.fintlabs.resource.server.enums.JwtType
-import no.fintlabs.resource.server.opa.OpaService
+import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authorization.AuthorizationDecision
@@ -20,10 +21,10 @@ import reactor.core.publisher.Mono
 @EnableWebFluxSecurity
 class SecurityConfiguration(
     private val securityProperties: SecurityProperties,
-    opaService: OpaService
+    private val coreAccessService: CoreAccessService
 ) {
 
-    private val coreAccessService = CoreAccessService(securityProperties, opaService)
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     @Bean
     fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
@@ -41,14 +42,24 @@ class SecurityConfiguration(
             ?.let { exchanges.pathMatchers(*it).permitAll() }
             .also { exchanges.anyExchange().access(::evaluateAuthorization) }
 
-    private fun evaluateAuthorization(
+    fun evaluateAuthorization(
         auth: Mono<Authentication>,
         ctx: AuthorizationContext
     ): Mono<AuthorizationDecision> =
         auth.flatMap { authentication ->
             if (securityProperties.jwtType != JwtType.CORE) mono { AuthorizationDecision(true) }
-            else coreAccessService.isAuthorized(ctx.exchange!!, authentication)
-                .map { AuthorizationDecision(it) }
+             else {
+                val principal = authentication.principal
+                when (principal) {
+                    is CorePrincipal -> coreAccessService.authorizeCore(principal, ctx.exchange)
+                        .map { AuthorizationDecision(it) }
+
+                    else -> {
+                        logger.debug("Principal is not CorePrincipal, type: ${principal?.javaClass?.simpleName}, denying access")
+                        mono { AuthorizationDecision(false) }
+                    }
+                }
+            }
         }
 
     private fun configureJwtConverter(jwtSpec: ServerHttpSecurity.OAuth2ResourceServerSpec.JwtSpec) {
