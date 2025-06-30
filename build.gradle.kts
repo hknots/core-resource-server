@@ -44,6 +44,8 @@ dependencies {
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+apply(from = "https://raw.githubusercontent.com/FINTLabs/fint-buildscripts/master/reposilite.ga.gradle")
+
 kotlin {
 	compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") }
 }
