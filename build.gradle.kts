@@ -44,8 +44,6 @@ dependencies {
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-apply(from = "https://raw.githubusercontent.com/FINTLabs/fint-buildscripts/master/reposilite.ga.gradle")
-
 kotlin {
 	compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") }
 }
@@ -53,23 +51,18 @@ kotlin {
 tasks.withType<Test> { useJUnitPlatform() }
 tasks.withType<org.springframework.boot.gradle.tasks.bundling.BootJar> { enabled = false }
 
-fun Project.sourceJar(): TaskProvider<Jar> = tasks.register<Jar>("sourceJar") {
+val sourcesJar by tasks.registering(Jar::class) {
 	archiveClassifier.set("sources")
 	from(sourceSets["main"].allSource)
 }
 
-fun Project.configurePublishing(sources: TaskProvider<Jar>) = publishing {
-	publications {
-		create<MavenPublication>("mavenJava") {
-			from(components["java"])
-			artifact(sources.get())
-		}
-	}
-	repositories { mavenLocal() }
-}
+apply(from = "https://raw.githubusercontent.com/FINTLabs/fint-buildscripts/master/reposilite.ga.gradle")
 
-val sourcesJar = sourceJar()
-configurePublishing(sourcesJar)
+publishing {
+	publications.named<MavenPublication>("maven") {
+		artifact(sourcesJar.get())
+	}
+}
 
 fun Project.configureTestSets() = sourceSets {
 	val unit by creating {
