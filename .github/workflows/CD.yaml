@@ -2,7 +2,7 @@ name: CD
 
 on:
   release:
-    types: [ published ]
+    types: [published]
 
 jobs:
   publish_lib:
@@ -20,6 +20,11 @@ jobs:
       - name: Gradle Wrapper Validation
         uses: gradle/wrapper-validation-action@v1.0.4
 
+      - name: Extract version (no “v” prefix)
+        run: |
+          TAG=${{ github.event.release.tag_name }}
+          echo "VERSION=${TAG#v}" >> $GITHUB_ENV
+
       - name: Build & publish to Reposilite
         uses: gradle/gradle-build-action@v2.4.2
         with:
@@ -27,7 +32,7 @@ jobs:
             clean
             build
             publish
-            -Pversion=${{ github.event.release.tag_name }}
+            -Pversion=${{ env.VERSION }}
         env:
           REPOSILITE_USERNAME: ${{ secrets.REPOSILITE_USERNAME }}
           REPOSILITE_PASSWORD: ${{ secrets.REPOSILITE_PASSWORD }}
