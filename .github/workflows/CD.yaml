@@ -17,9 +17,6 @@ jobs:
           java-version: '21'
           distribution: 'adopt'
 
-      - name: Gradle Wrapper Validation
-        uses: gradle/wrapper-validation-action@v1.0.4
-
       - name: Extract version (no “v” prefix)
         run: |
           TAG=${{ github.event.release.tag_name }}
